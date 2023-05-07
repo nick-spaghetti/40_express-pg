@@ -1,38 +1,41 @@
 /** Express app for Lunchly. */
-
-const express = require("express");
+const express = require('express');
 const nunjucks = require("nunjucks");
-const bodyParser = require("body-parser");
-const routes = require("./routes");
-
+const morgan = require('morgan');
+const expressError = require('./express-error');
+const bodyParser = require('body-parser');
 const app = express();
 
-// Parse body for urlencoded (non-JSON) data
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(morgan('dev'));
+
+app.use(express.json());
+app.use(bodyParser.urlencoded({
+	extended: false
+}));
 
 nunjucks.configure("templates", {
-  autoescape: true,
-  express: app
+	autoescape: true,
+	express: app
 });
 
+const routes = require("./routes");
 app.use(routes);
 
 /** 404 handler */
 
-app.use(function(req, res, next) {
-  const err = new Error("Not Found");
-  err.status = 404;
-
-  // pass the error to the next piece of middleware
-  return next(err);
+app.use((req, res, next) => {
+	const e = new expressError('page not found', 404);
+	next(e);
 });
 
 /** general error handler */
 
 app.use((err, req, res, next) => {
-  res.status(err.status || 500);
+	res.status(err.status || 500);
 
-  return res.render("error.html", { err });
+	return res.render("error.html", {
+		err
+	});
 });
 
 module.exports = app;
